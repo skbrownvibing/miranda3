@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Miranda3 — who's waiting on you</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<!-- ───────────── Start screen ───────────── -->
+<section id="start" class="screen">
+  <div class="start-card" id="dropzone">
+    <div class="logo">miranda<span>3</span></div>
+    <p class="tagline">See who you’ve left on read — and go reply.</p>
+    <div class="start-actions">
+      <button class="btn primary" id="pickFile">Load my export</button>
+      <button class="btn ghost" id="loadSample">Try sample data</button>
+    </div>
+    <p class="drop-hint">…or drop your <code>miranda3_messages.json</code> here</p>
+    <details class="how">
+      <summary>How do I get my export?</summary>
+      <ol>
+        <li>Grant <b>Full Disk Access</b> to Terminal (System Settings → Privacy &amp; Security).</li>
+        <li>Double-click <code>export.command</code> in this folder.</li>
+        <li>It writes <code>~/Desktop/miranda3_messages.json</code> — load that here.</li>
+      </ol>
+    </details>
+    <input type="file" id="fileInput" accept="application/json,.json" hidden />
+  </div>
+</section>
+
+<!-- ───────────── Dashboard ───────────── -->
+<section id="dash" class="screen" hidden>
+  <header class="topbar">
+    <div class="logo small">miranda<span>3</span></div>
+    <div class="topbar-right">
+      <span class="updated" id="updated"></span>
+      <button class="btn tiny ghost" id="darkToggle">dark mode</button>
+      <button class="btn tiny ghost" id="reload">load other file</button>
+    </div>
+  </header>
+
+  <div class="hero">
+    <div class="score-wrap">
+      <div class="ring" id="ring">
+        <svg viewBox="0 0 200 200" width="200" height="200">
+          <defs>
+            <linearGradient id="ringGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#3bb6ff" />
+              <stop offset="100%" stop-color="#c948e0" />
+            </linearGradient>
+          </defs>
+          <circle class="ring-track" cx="100" cy="100" r="86" />
+          <circle class="ring-fill" id="ringFill" cx="100" cy="100" r="86" />
+        </svg>
+        <div class="ring-center">
+          <div class="score-num" id="scoreNum">--</div>
+          <div class="score-cap">SCORE</div>
+        </div>
+      </div>
+      <div class="score-label" id="scoreLabel"></div>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-val" id="statRate">--%</div>
+        <div class="stat-cap">REPLY RATE</div>
+        <div class="bar"><span id="barRate"></span></div>
+      </div>
+      <div class="stat">
+        <div class="stat-val" id="statWait">--</div>
+        <div class="stat-cap">AVG WAIT</div>
+        <div class="bar"><span id="barWait"></span></div>
+      </div>
+      <div class="stat">
+        <div class="stat-val" id="statHang">--</div>
+        <div class="stat-cap">WAITING ON YOU</div>
+        <div class="bar"><span id="barHang"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="action">
+    <div class="action-head">
+      <h2>Action needed</h2>
+      <span class="action-sub" id="actionSub"></span>
+    </div>
+
+    <div class="filters" id="filters">
+      <button class="chip active" data-bucket="1d">1 day <em></em></button>
+      <button class="chip" data-bucket="7d">7 days <em></em></button>
+      <button class="chip" data-bucket="30d">30 days <em></em></button>
+      <button class="chip" data-bucket="90d">90 days <em></em></button>
+    </div>
+
+    <div class="thread-list" id="threads"></div>
+    <div class="empty" id="emptyState" hidden>🎉 Nobody’s waiting on you in this window. Inbox zero vibes.</div>
+  </div>
+
+  <footer class="foot">
+    <button class="btn tiny ghost" id="showDismissed"></button>
+    <span class="foot-note">All data stays in this browser. Nothing is uploaded.</span>
+  </footer>
+</section>
+
+<script src="core.js"></script>
+<script src="sample-data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
