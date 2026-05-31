@@ -55,6 +55,10 @@ body {
 .how { margin-top: 24px; text-align: left; color: var(--muted); font-size: 13px; }
 .how summary { cursor: pointer; color: var(--ink); font-weight: 600; }
 .how ol { margin: 12px 0 0; padding-left: 20px; line-height: 1.7; }
+.how .dl-cmd { color: var(--accent); font-weight: 600; text-decoration: none; }
+.how .dl-cmd:hover { text-decoration: underline; }
+.how .dl-cmd code { color: inherit; }
+.how-note { display: block; font-size: 12px; opacity: .8; }
 
 /* ── Buttons ── */
 .btn { border: none; border-radius: 12px; padding: 12px 20px; font-size: 15px; font-weight: 600; cursor: pointer; transition: transform .1s, opacity .15s; }
