@@ -191,7 +191,9 @@
     var preview = escapeHtml(c.last_message_text || '');
     var sender = c.is_group ? '' : 'Them: ';
 
-    var groupTag = c.is_group ? ' <span class="group-tag">group</span>' : '';
+    var groupTag = c.is_group
+      ? ' <span class="group-tag">group' + (c.participant_count ? ' · ' + c.participant_count : '') + '</span>'
+      : '';
 
     el.innerHTML =
       '<div class="avatar">' + escapeHtml(M.initial(c)) + '</div>' +

@@ -26,10 +26,14 @@ ok('spam exists in raw data', !!spam);
 ok('spam is not personal', !M.isPersonal(spam));
 var dd = convos.filter(function (c) { return c.contact_name === 'DoorDash'; })[0];
 ok('delivery is not personal', !M.isPersonal(dd));
-var group = convos.filter(function (c) { return c.is_group; })[0];
-ok('group is not personal (excluded from score)', !M.isPersonal(group));
-ok('group IS inbox-eligible (shown in waiting list)', M.inInbox(group));
-ok('group needs response (last msg not from me)', M.needsResponse(group, dismissed));
+var group = convos.filter(function (c) { return c.group_name === 'Sunday Roast Crew'; })[0];
+ok('small group is not personal (excluded from score)', !M.isPersonal(group));
+ok('small group (≤5) IS inbox-eligible', M.inInbox(group));
+ok('small group needs response (last msg not from me)', M.needsResponse(group, dismissed));
+var bigGroup = convos.filter(function (c) { return c.group_name === 'College Crew 🎓'; })[0];
+ok('massive group exists in raw data', !!bigGroup);
+ok('massive group (>5) is NOT inbox-eligible', !M.inInbox(bigGroup));
+ok('massive group does NOT need response', !M.needsResponse(bigGroup, dismissed));
 
 // needsResponse: only personal + they sent last
 var gemma = convos.filter(function (c) { return c.contact_name === 'Gemma Colon'; })[0];

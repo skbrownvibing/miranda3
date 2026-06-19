@@ -48,9 +48,10 @@ and score history persist in the browser (`localStorage`).
 - **Buckets (1 / 7 / 30 / 90 days)** are cumulative windows — "7 days" includes
   everything from the last 7 days, "30 days" the last 30, etc. The count on each
   chip is how many people are waiting within that window.
-- A thread is **waiting on you** when it's a 1:1 or group chat (not spam or
-  delivery) and *they* sent the last real message (tapbacks/reactions don't
-  count). Group threads are tagged **group** in the list.
+- A thread is **waiting on you** when it's a 1:1 or **small group chat
+  (5 people or fewer, including you)** that isn't spam/delivery and *they* sent
+  the last real message (tapbacks/reactions don't count). Bigger group chats are
+  skipped. Group threads are tagged **group · N** in the list.
 - **Go to iMessage →** opens that conversation via the `sms:` URL scheme.
 - **✕ Dismiss** removes a thread you don't owe a reply to. It comes back if they
   text again. View/restore dismissed threads from the footer.
@@ -72,8 +73,9 @@ Labels: ≤15 "actively ghosting 👻" · ≤35 "bad texter 😬" · ≤55 "hit 
 - **Spam** — 5/6-digit short codes, "verification code", "reply STOP", "claim
   your", etc.
 - **Delivery / automated** — DoorDash, FedEx, "out for delivery", "your order"…
-- **Group chats** — shown in the inbox (tagged *group*) but excluded from the
-  responsiveness score.
+- **Group chats** — only small ones (≤5 people) show in the inbox (tagged
+  *group · N*); larger group chats are skipped. Groups are always excluded from
+  the responsiveness score.
 
 Classification is heuristic; the underlying data is still exported so nothing is
 silently lost.

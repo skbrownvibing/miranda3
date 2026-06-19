@@ -445,6 +445,7 @@ def main():
             'phone':             primary,
             'is_group':          is_group,
             'group_name':        display_name if is_group else None,
+            'participant_count': len(handles) + 1,  # other members + you
             'category':          categorize(primary, contact_name, in_contacts, msg_list, msg_count),
             'last_message_at':   last_at,
             'last_message_text': last_preview,
