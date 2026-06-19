@@ -112,6 +112,8 @@ body {
 .thread-main { flex: 1; min-width: 0; }
 .thread-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
 .thread-name { font-weight: 700; font-size: 16px; }
+.group-tag { font-size: 11px; font-weight: 700; letter-spacing: .3px; text-transform: uppercase;
+  color: var(--accent); background: var(--card2); border-radius: 999px; padding: 2px 7px; vertical-align: middle; }
 .thread-when { color: var(--muted); font-size: 13px; white-space: nowrap; }
 .thread-when .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-left: 6px; vertical-align: middle; }
 .thread-preview { color: var(--muted); font-size: 14px; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

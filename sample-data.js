@@ -86,7 +86,8 @@
       });
     });
 
-    // Noise — excluded from the inbox and the score.
+    // Noise — spam/delivery are excluded from the inbox and the score. The
+    // group chat below shows in the inbox (waiting list) but not the score.
     conversations.push({
       id: 'iMessage;-;88202', contact_name: null, phone: '88202', is_group: false, group_name: null,
       category: 'spam', last_message_at: iso(4 * H), latest_inbound_at: iso(4 * H), i_replied_last: false,

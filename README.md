@@ -16,7 +16,7 @@ slimmed to a pure static app (no server) with the day-bucket inbox.
 Two local pieces. Nothing is uploaded; your messages never leave your Mac.
 
 1. **`export.command`** — a double-clickable script. Reads
-   `~/Library/Messages/chat.db` (and Contacts for names), filters out spam,
+   `~/Library/Messages/chat.db` (and Contacts for names), categorizes spam,
    delivery/automated texts, and group chats, and writes
    `~/Desktop/miranda3_messages.json`.
 2. **`index.html`** — a static web app. Drop the JSON on it (or click **Try
@@ -48,8 +48,9 @@ and score history persist in the browser (`localStorage`).
 - **Buckets (1 / 7 / 30 / 90 days)** are cumulative windows — "7 days" includes
   everything from the last 7 days, "30 days" the last 30, etc. The count on each
   chip is how many people are waiting within that window.
-- A thread is **waiting on you** when it's a personal 1:1 and *they* sent the
-  last real message (tapbacks/reactions don't count).
+- A thread is **waiting on you** when it's a 1:1 or group chat (not spam or
+  delivery) and *they* sent the last real message (tapbacks/reactions don't
+  count). Group threads are tagged **group** in the list.
 - **Go to iMessage →** opens that conversation via the `sms:` URL scheme.
 - **✕ Dismiss** removes a thread you don't owe a reply to. It comes back if they
   text again. View/restore dismissed threads from the footer.
@@ -71,7 +72,8 @@ Labels: ≤15 "actively ghosting 👻" · ≤35 "bad texter 😬" · ≤55 "hit 
 - **Spam** — 5/6-digit short codes, "verification code", "reply STOP", "claim
   your", etc.
 - **Delivery / automated** — DoorDash, FedEx, "out for delivery", "your order"…
-- **Group chats** — excluded from the inbox and the score.
+- **Group chats** — shown in the inbox (tagged *group*) but excluded from the
+  responsiveness score.
 
 Classification is heuristic; the underlying data is still exported so nothing is
 silently lost.

@@ -191,11 +191,13 @@
     var preview = escapeHtml(c.last_message_text || '');
     var sender = c.is_group ? '' : 'Them: ';
 
+    var groupTag = c.is_group ? ' <span class="group-tag">group</span>' : '';
+
     el.innerHTML =
       '<div class="avatar">' + escapeHtml(M.initial(c)) + '</div>' +
       '<div class="thread-main">' +
         '<div class="thread-top">' +
-          '<span class="thread-name">' + escapeHtml(M.displayName(c)) + '</span>' +
+          '<span class="thread-name">' + escapeHtml(M.displayName(c)) + groupTag + '</span>' +
           '<span class="thread-when">' + escapeHtml(M.relTime(c.last_message_at, now)) +
             '<span class="dot" style="background:' + color + '"></span></span>' +
         '</div>' +
@@ -228,15 +230,22 @@
       actions.appendChild(restore);
     }
 
-    var href = M.buildSmsHref(c.phone);
+    // Groups have no single sms: target (the export's phone is just one member),
+    // so don't deep-link them — send the user to Messages to pick the thread.
+    var href = c.is_group ? null : M.buildSmsHref(c.phone);
     var go = document.createElement('a');
     go.className = 'go-btn';
     go.textContent = 'Go to iMessage →';
     if (href) { go.href = href; }
     else {
       go.href = '#';
-      go.title = 'No phone number — open Messages manually';
-      go.onclick = function (e) { e.preventDefault(); alert('No phone/handle on this thread (group or short code).'); };
+      go.title = 'Open Messages and pick this thread';
+      go.onclick = function (e) {
+        e.preventDefault();
+        alert(c.is_group
+          ? 'Group chat — open Messages and pick “' + M.displayName(c) + '”.'
+          : 'No phone/handle on this thread (group or short code).');
+      };
     }
     actions.appendChild(go);
 

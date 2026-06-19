@@ -27,7 +27,9 @@ ok('spam is not personal', !M.isPersonal(spam));
 var dd = convos.filter(function (c) { return c.contact_name === 'DoorDash'; })[0];
 ok('delivery is not personal', !M.isPersonal(dd));
 var group = convos.filter(function (c) { return c.is_group; })[0];
-ok('group is not personal', !M.isPersonal(group));
+ok('group is not personal (excluded from score)', !M.isPersonal(group));
+ok('group IS inbox-eligible (shown in waiting list)', M.inInbox(group));
+ok('group needs response (last msg not from me)', M.needsResponse(group, dismissed));
 
 // needsResponse: only personal + they sent last
 var gemma = convos.filter(function (c) { return c.contact_name === 'Gemma Colon'; })[0];
@@ -41,10 +43,10 @@ console.log('  buckets:', JSON.stringify(counts));
 ok('counts cumulative 1d<=7d', counts['1d'] <= counts['7d']);
 ok('counts cumulative 7d<=30d', counts['7d'] <= counts['30d']);
 ok('counts cumulative 30d<=90d', counts['30d'] <= counts['90d']);
-// We seeded 8 waiting threads, all within 90d.
-eq('90d bucket has all 8 waiting', counts['90d'], 8);
-// Gemma (5h) + Liz (20h) are within 1 day.
-eq('1d bucket has 2', counts['1d'], 2);
+// We seeded 8 waiting 1:1 threads + 1 waiting group, all within 90d.
+eq('90d bucket has all 9 waiting (8 1:1 + 1 group)', counts['90d'], 9);
+// Gemma (5h) + Liz (20h) + Sunday Roast group (3h) are within 1 day.
+eq('1d bucket has 3', counts['1d'], 3);
 
 // bucketKeyFor tightest bucket
 eq('Gemma tightest bucket', M.bucketKeyFor(gemma, NOW), '1d');
@@ -53,7 +55,7 @@ eq('Sam (75d) tightest bucket', M.bucketKeyFor(sam, NOW), '90d');
 
 // Dismiss removes from waiting + bucket count
 var d2 = { 'iMessage;-;+12125550111': { at: NOW } }; // dismiss Gemma
-eq('1d count drops after dismiss', M.bucketCounts(convos, NOW, d2)['1d'], 1);
+eq('1d count drops after dismiss (Liz + group remain)', M.bucketCounts(convos, NOW, d2)['1d'], 2);
 ok('dismissed Gemma no longer needs response', !M.needsResponse(gemma, d2));
 
 // Score sanity
