@@ -16,7 +16,7 @@ Usage:
   ./export.command [--help] [--version]
 
 Environment overrides:
-  MIRANDA3_OUTPUT_PATH    Output JSON path (default: ~/Desktop/miranda3_messages.json)
+  MIRANDA3_OUTPUT_PATH    Output JSON path (default: ~/Desktop/miranda4_messages.json)
   MIRANDA3_CHAT_DB_PATH   Chat DB path for export (default: ~/Library/Messages/chat.db)
   MIRANDA3_LOOKBACK_DAYS  How far back to pull messages (default: 90)
 
@@ -55,7 +55,7 @@ from datetime import datetime, timezone, timedelta
 
 LOOKBACK_DAYS   = int(os.environ.get('MIRANDA3_LOOKBACK_DAYS', '90'))
 PERSONAL_THRESH = 3     # Min messages in window to classify as personal (no contact)
-OUTPUT_PATH     = os.path.expanduser(os.environ.get('MIRANDA3_OUTPUT_PATH', '~/Desktop/miranda3_messages.json'))
+OUTPUT_PATH     = os.path.expanduser(os.environ.get('MIRANDA3_OUTPUT_PATH', '~/Desktop/miranda4_messages.json'))
 APPLE_EPOCH     = datetime(2001, 1, 1, tzinfo=timezone.utc)
 
 # ── Helpers ───────────────────────────────────────────────────────────────────

@@ -63,7 +63,7 @@
         if (!data || !Array.isArray(data.conversations)) throw new Error('no conversations array');
         adopt(data);
       } catch (err) {
-        alert('Could not read that file — expected a miranda3_messages.json export.\n\n' + err.message);
+        alert('Could not read that file — expected a miranda4_messages.json export.\n\n' + err.message);
       }
     };
     r.readAsText(file);

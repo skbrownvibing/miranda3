@@ -2,3 +2,4 @@ node_modules/
 *.log
 .DS_Store
 miranda3_messages.json
+miranda4_messages.json

@@ -18,7 +18,7 @@ Two local pieces. Nothing is uploaded; your messages never leave your Mac.
 1. **`export.command`** — a double-clickable script. Reads
    `~/Library/Messages/chat.db` (and Contacts for names), categorizes spam,
    delivery/automated texts, and group chats, and writes
-   `~/Desktop/miranda3_messages.json`.
+   `~/Desktop/miranda4_messages.json`.
 2. **`index.html`** — a static web app. Drop the JSON on it (or click **Try
    sample data**). It classifies, scores, lists who's waiting on you, and
    deep-links back into Messages.
@@ -36,7 +36,7 @@ buckets.
 1. Grant **Full Disk Access** to Terminal:
    System Settings → Privacy & Security → Full Disk Access → enable Terminal.
 2. Double-click **`export.command`**. It writes
-   `~/Desktop/miranda3_messages.json` and prints a summary.
+   `~/Desktop/miranda4_messages.json` and prints a summary.
 3. Open **`index.html`** and drop that JSON onto the page (or click **Load my
    export**).
 
