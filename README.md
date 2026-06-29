@@ -43,6 +43,13 @@ buckets.
 Re-run the export whenever you want fresh data. Your loaded data, dismissals,
 and score history persist in the browser (`localStorage`).
 
+**Refresh without re-picking the file.** In Chromium browsers (Chrome / Edge /
+Arc / Brave), once you've loaded `miranda4_messages.json` the app remembers it:
+click **↻ refresh** in the top bar to re-read it in one click — no file picker.
+Better yet, leave the tab open and the app **auto-reloads** whenever the export
+script rewrites the file (look for the **↻ live** marker). Safari doesn't support
+this and falls back to the normal "load other file" picker.
+
 ## The inbox
 
 - **Buckets (1 / 7 / 30 / 90 days)** are cumulative windows — "7 days" includes
