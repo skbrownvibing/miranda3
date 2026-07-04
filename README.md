@@ -18,7 +18,7 @@ Two local pieces. Nothing is uploaded; your messages never leave your Mac.
 1. **`export.command`** — a double-clickable script. Reads
    `~/Library/Messages/chat.db` (and Contacts for names), categorizes spam,
    delivery/automated texts, and group chats, and writes
-   `~/Desktop/miranda4_messages.json`.
+   `~/Desktop/miranda5_messages.json`.
 2. **`index.html`** — a static web app. Drop the JSON on it (or click **Try
    sample data**). It classifies, scores, lists who's waiting on you, and
    deep-links back into Messages.
@@ -36,7 +36,8 @@ buckets.
 1. Grant **Full Disk Access** to Terminal:
    System Settings → Privacy & Security → Full Disk Access → enable Terminal.
 2. Double-click **`export.command`**. It writes
-   `~/Desktop/miranda4_messages.json` and prints a summary.
+   `~/Desktop/miranda5_messages.json`, prints a summary, and opens Finder with
+   that file already selected so it's easy to find.
 3. Open **`index.html`** and drop that JSON onto the page (or click **Load my
    export**).
 
@@ -44,7 +45,7 @@ Re-run the export whenever you want fresh data. Your loaded data, dismissals,
 and score history persist in the browser (`localStorage`).
 
 **Refresh without re-picking the file.** In Chromium browsers (Chrome / Edge /
-Arc / Brave), once you've loaded `miranda4_messages.json` the app remembers it:
+Arc / Brave), once you've loaded `miranda5_messages.json` the app remembers it:
 click **↻ refresh** in the top bar to re-read it in one click — no file picker.
 Better yet, leave the tab open and the app **auto-reloads** whenever the export
 script rewrites the file (look for the **↻ live** marker). Safari doesn't support
