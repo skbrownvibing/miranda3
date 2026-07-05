@@ -106,7 +106,8 @@
       latest_inbound_at: iso(3 * H), i_replied_last: false, last_message_text: 'next round on me', message_count_30d: 12,
       messages: [{ text: 'who’s in for brunch', from_me: false, date: iso(4 * H) }, { text: 'next round on me', from_me: false, date: iso(3 * H) }]
     });
-    // Massive group — over the people cap, so it stays out of the inbox.
+    // Large group (14 people) — shows in the inbox like any group, but is
+    // still excluded from the responsiveness score.
     conversations.push({
       id: 'iMessage;chat;collegecrew', contact_name: null, phone: 'Group · 14 people', is_group: true,
       participant_count: 14, group_name: 'College Crew 🎓', category: 'personal', last_message_at: iso(2 * H),

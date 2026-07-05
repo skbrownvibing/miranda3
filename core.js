@@ -53,19 +53,13 @@
     return cat !== 'spam' && cat !== 'delivery';
   }
 
-  // Largest group (people, including you) that still counts as a real reply
-  // obligation. Bigger group chats are noise, not an inbox.
-  var MAX_GROUP_PEOPLE = 5;
-
   // Inbox eligibility for the "waiting on you" list. Same as isPersonal but
-  // ALSO includes small group chats (≤ MAX_GROUP_PEOPLE; still excludes
-  // spam/delivery). The list shows these groups; the score (isPersonal) doesn't.
-  // Exports without participant_count keep showing (we can't size them).
+  // ALSO includes group chats of any size (still excludes spam/delivery). The
+  // list shows these groups; the score (isPersonal) still ignores them, so
+  // group dynamics never distort your responsiveness number.
   function inInbox(c) {
     var cat = getCategory(c);
     if (cat === 'spam' || cat === 'delivery') return false;
-    if (c.is_group && typeof c.participant_count === 'number' &&
-        c.participant_count > MAX_GROUP_PEOPLE) return false;
     return true;
   }
 
@@ -219,7 +213,6 @@
     waitDays: waitDays,
     isPersonal: isPersonal,
     inInbox: inInbox,
-    MAX_GROUP_PEOPLE: MAX_GROUP_PEOPLE,
     needsResponse: needsResponse,
     bucketKeyFor: bucketKeyFor,
     waitingInBucket: waitingInBucket,

@@ -28,12 +28,13 @@ var dd = convos.filter(function (c) { return c.contact_name === 'DoorDash'; })[0
 ok('delivery is not personal', !M.isPersonal(dd));
 var group = convos.filter(function (c) { return c.group_name === 'Sunday Roast Crew'; })[0];
 ok('small group is not personal (excluded from score)', !M.isPersonal(group));
-ok('small group (≤5) IS inbox-eligible', M.inInbox(group));
+ok('small group IS inbox-eligible', M.inInbox(group));
 ok('small group needs response (last msg not from me)', M.needsResponse(group, dismissed));
 var bigGroup = convos.filter(function (c) { return c.group_name === 'College Crew 🎓'; })[0];
-ok('massive group exists in raw data', !!bigGroup);
-ok('massive group (>5) is NOT inbox-eligible', !M.inInbox(bigGroup));
-ok('massive group does NOT need response', !M.needsResponse(bigGroup, dismissed));
+ok('large group exists in raw data', !!bigGroup);
+ok('large group (14 people) is ALSO inbox-eligible (no size cap)', M.inInbox(bigGroup));
+ok('large group is not personal (still excluded from score)', !M.isPersonal(bigGroup));
+ok('large group needs response', M.needsResponse(bigGroup, dismissed));
 
 // needsResponse: only personal + they sent last
 var gemma = convos.filter(function (c) { return c.contact_name === 'Gemma Colon'; })[0];
@@ -47,10 +48,10 @@ console.log('  buckets:', JSON.stringify(counts));
 ok('counts cumulative 1d<=7d', counts['1d'] <= counts['7d']);
 ok('counts cumulative 7d<=30d', counts['7d'] <= counts['30d']);
 ok('counts cumulative 30d<=90d', counts['30d'] <= counts['90d']);
-// We seeded 8 waiting 1:1 threads + 1 waiting group, all within 90d.
-eq('90d bucket has all 9 waiting (8 1:1 + 1 group)', counts['90d'], 9);
-// Gemma (5h) + Liz (20h) + Sunday Roast group (3h) are within 1 day.
-eq('1d bucket has 3', counts['1d'], 3);
+// We seeded 8 waiting 1:1 threads + 2 waiting groups, all within 90d.
+eq('90d bucket has all 10 waiting (8 1:1 + 2 groups)', counts['90d'], 10);
+// Gemma (5h) + Liz (20h) + Sunday Roast (3h) + College Crew (2h) are within 1 day.
+eq('1d bucket has 4', counts['1d'], 4);
 
 // bucketKeyFor tightest bucket
 eq('Gemma tightest bucket', M.bucketKeyFor(gemma, NOW), '1d');
@@ -59,7 +60,7 @@ eq('Sam (75d) tightest bucket', M.bucketKeyFor(sam, NOW), '90d');
 
 // Dismiss removes from waiting + bucket count
 var d2 = { 'iMessage;-;+12125550111': { at: NOW } }; // dismiss Gemma
-eq('1d count drops after dismiss (Liz + group remain)', M.bucketCounts(convos, NOW, d2)['1d'], 2);
+eq('1d count drops after dismiss (Liz + 2 groups remain)', M.bucketCounts(convos, NOW, d2)['1d'], 3);
 ok('dismissed Gemma no longer needs response', !M.needsResponse(gemma, d2));
 
 // Score sanity
