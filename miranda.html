@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Miranda3 — who's waiting on you</title>
+<style>
+:root {
+  --bg: #eef0fb;
+  --bg2: #e7e9f8;
+  --card: #ffffff;
+  --card2: #f3f1fb;
+  --ink: #1c1d2b;
+  --muted: #8a8ca3;
+  --line: #e6e6f0;
+  --green: #2dd4a0;
+  --yellow: #f5c842;
+  --orange: #f59e42;
+  --red: #ef4444;
+  --accent: #c948e0;
+  --accent2: #3bb6ff;
+  --shadow: 0 12px 40px rgba(60, 50, 120, 0.10);
+}
+[data-theme="dark"] {
+  --bg: #0f1018;
+  --bg2: #15172300;
+  --card: #1b1d2b;
+  --card2: #20223200;
+  --ink: #f2f3fb;
+  --muted: #8b8ea8;
+  --line: #2a2c3e;
+  --shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+  background: linear-gradient(160deg, var(--bg), var(--bg2));
+  color: var(--ink);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+.screen { max-width: 980px; margin: 0 auto; padding: 24px; }
+
+/* ── Logo ── */
+.logo { font-size: 44px; font-weight: 800; letter-spacing: -1.5px; }
+.logo span { color: var(--accent); }
+.logo.small { font-size: 24px; }
+
+/* ── Start screen ── */
+#start { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+.start-card {
+  background: var(--card); border-radius: 24px; padding: 48px; max-width: 480px; width: 100%;
+  box-shadow: var(--shadow); text-align: center; border: 2px dashed transparent; transition: border-color .15s;
+}
+.start-card.dragover { border-color: var(--accent); }
+.tagline { color: var(--muted); margin: 8px 0 28px; font-size: 16px; }
+.start-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.drop-hint { color: var(--muted); margin-top: 24px; font-size: 13px; }
+.drop-hint code, .how code { background: var(--card2); padding: 2px 6px; border-radius: 6px; font-size: 12px; }
+.how { margin-top: 24px; text-align: left; color: var(--muted); font-size: 13px; }
+.how summary { cursor: pointer; color: var(--ink); font-weight: 600; }
+.how ol { margin: 12px 0 0; padding-left: 20px; line-height: 1.7; }
+.how .dl-cmd { color: var(--accent); font-weight: 600; text-decoration: none; }
+.how .dl-cmd:hover { text-decoration: underline; }
+.how .dl-cmd code { color: inherit; }
+.how-note { display: block; font-size: 12px; opacity: .8; }
+
+/* ── Buttons ── */
+.btn { border: none; border-radius: 12px; padding: 12px 20px; font-size: 15px; font-weight: 600; cursor: pointer; transition: transform .1s, opacity .15s; }
+.btn:active { transform: scale(.97); }
+.btn.primary { background: linear-gradient(135deg, var(--accent2), var(--accent)); color: #fff; }
+.btn.ghost { background: var(--card2); color: var(--ink); }
+.btn.tiny { padding: 7px 14px; font-size: 13px; border-radius: 9px; }
+
+/* ── Topbar ── */
+.topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.updated { color: var(--muted); font-size: 12px; }
+
+/* ── Hero ── */
+.hero { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: center; margin: 16px 0 32px; }
+.score-wrap { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.ring { position: relative; width: 200px; height: 200px; filter: drop-shadow(0 0 24px rgba(201,72,224,.25)); }
+.ring svg { transform: rotate(-90deg); }
+.ring-track { fill: none; stroke: var(--line); stroke-width: 12; }
+.ring-fill { fill: none; stroke: url(#ringGrad); stroke-width: 12; stroke-linecap: round;
+  stroke-dasharray: 540; stroke-dashoffset: 540; transition: stroke-dashoffset 1s cubic-bezier(.2,.8,.2,1); }
+.ring-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.score-num { font-size: 64px; font-weight: 800; line-height: 1; color: var(--yellow); }
+.score-cap { font-size: 13px; letter-spacing: 2px; color: var(--muted); margin-top: 4px; }
+.score-label { font-size: 18px; font-weight: 700; }
+
+.stats { display: flex; flex-direction: column; gap: 14px; }
+.stat { background: var(--card); border-radius: 18px; padding: 18px 22px; box-shadow: var(--shadow); }
+.stat-val { font-size: 34px; font-weight: 800; }
+.stat-cap { font-size: 12px; letter-spacing: 1.5px; color: var(--muted); margin: 2px 0 10px; }
+.bar { height: 5px; background: var(--line); border-radius: 3px; overflow: hidden; }
+.bar span { display: block; height: 100%; width: 0; background: var(--orange); border-radius: 3px; transition: width .8s; }
+#barRate { background: var(--green); }
+
+/* ── Action list ── */
+.action-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; }
+.action-head h2 { margin: 0; font-size: 26px; }
+.action-sub { color: var(--muted); font-size: 14px; }
+.filters { display: flex; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+.chip { background: var(--card2); border: 1px solid var(--line); border-radius: 999px; padding: 8px 16px;
+  font-size: 14px; font-weight: 600; color: var(--muted); cursor: pointer; transition: all .15s; }
+.chip.active { background: linear-gradient(135deg, var(--accent2), var(--accent)); color: #fff; border-color: transparent; }
+.chip em { font-style: normal; opacity: .7; font-weight: 700; margin-left: 2px; }
+.chip.active em { opacity: .9; }
+
+.thread-list { display: flex; flex-direction: column; gap: 12px; }
+.thread { display: flex; align-items: center; gap: 16px; background: var(--card); border-radius: 18px;
+  padding: 16px 20px; box-shadow: var(--shadow); }
+.avatar { width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #8a5cf6, #6d4cf0);
+  color: #fff; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; flex-shrink: 0; }
+.thread-main { flex: 1; min-width: 0; }
+.thread-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.thread-name { font-weight: 700; font-size: 16px; }
+.group-tag { font-size: 11px; font-weight: 700; letter-spacing: .3px; text-transform: uppercase;
+  color: var(--accent); background: var(--card2); border-radius: 999px; padding: 2px 7px; vertical-align: middle; }
+.thread-when { color: var(--muted); font-size: 13px; white-space: nowrap; }
+.thread-when .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-left: 6px; vertical-align: middle; }
+.thread-preview { color: var(--muted); font-size: 14px; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.thread-preview b { color: var(--ink); font-weight: 600; }
+.thread-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.go-btn { background: linear-gradient(135deg, var(--accent2), var(--accent)); color: #fff; border: none;
+  border-radius: 12px; padding: 10px 16px; font-weight: 700; font-size: 14px; cursor: pointer; white-space: nowrap; text-decoration: none; display: inline-block; }
+.go-btn:active { transform: scale(.97); }
+.dismiss-btn { background: transparent; border: 1px solid var(--line); color: var(--muted); border-radius: 12px;
+  padding: 10px 12px; cursor: pointer; font-size: 14px; }
+
+.empty { text-align: center; color: var(--muted); padding: 48px 20px; font-size: 16px; }
+
+.foot { display: flex; align-items: center; justify-content: space-between; margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--line); }
+.foot-note { color: var(--muted); font-size: 12px; }
+
+@media (max-width: 720px) {
+  .hero { grid-template-columns: 1fr; }
+  .thread { flex-wrap: wrap; }
+  .thread-actions { width: 100%; justify-content: flex-end; }
+}
+
+</style>
+</head>
+<body>
+
+<!-- ───────────── Start screen ───────────── -->
+<section id="start" class="screen">
+  <div class="start-card" id="dropzone">
+    <div class="logo">miranda<span>3</span></div>
+    <p class="tagline">See who you’ve left on read — and go reply.</p>
+    <div class="start-actions">
+      <button class="btn primary" id="pickFile">Load my export</button>
+      <button class="btn ghost" id="loadSample">Try sample data</button>
+    </div>
+    <p class="drop-hint">…or drop your <code>miranda5_messages.json</code> here</p>
+    <details class="how">
+      <summary>How do I get my export?</summary>
+      <ol>
+        <li>Grant <b>Full Disk Access</b> to Terminal (System Settings → Privacy &amp; Security).</li>
+        <li>Double-click <code>export.command</code> in this folder.</li>
+        <li>It writes <code>~/Desktop/miranda5_messages.json</code> — load that here.</li>
+      </ol>
+    </details>
+    <input type="file" id="fileInput" accept="application/json,.json" hidden />
+  </div>
+</section>
+
+<!-- ───────────── Dashboard ───────────── -->
+<section id="dash" class="screen" hidden>
+  <header class="topbar">
+    <div class="logo small">miranda<span>3</span></div>
+    <div class="topbar-right">
+      <span class="updated" id="updated"></span>
+      <button class="btn tiny ghost" id="refreshBtn" title="Re-read your export file — auto-updates when you re-run the export">↻ refresh</button>
+      <button class="btn tiny ghost" id="darkToggle">dark mode</button>
+      <button class="btn tiny ghost" id="reload">load other file</button>
+    </div>
+  </header>
+
+  <div class="hero">
+    <div class="score-wrap">
+      <div class="ring" id="ring">
+        <svg viewBox="0 0 200 200" width="200" height="200">
+          <defs>
+            <linearGradient id="ringGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#3bb6ff" />
+              <stop offset="100%" stop-color="#c948e0" />
+            </linearGradient>
+          </defs>
+          <circle class="ring-track" cx="100" cy="100" r="86" />
+          <circle class="ring-fill" id="ringFill" cx="100" cy="100" r="86" />
+        </svg>
+        <div class="ring-center">
+          <div class="score-num" id="scoreNum">--</div>
+          <div class="score-cap">SCORE</div>
+        </div>
+      </div>
+      <div class="score-label" id="scoreLabel"></div>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-val" id="statRate">--%</div>
+        <div class="stat-cap">REPLY RATE</div>
+        <div class="bar"><span id="barRate"></span></div>
+      </div>
+      <div class="stat">
+        <div class="stat-val" id="statWait">--</div>
+        <div class="stat-cap">AVG WAIT</div>
+        <div class="bar"><span id="barWait"></span></div>
+      </div>
+      <div class="stat">
+        <div class="stat-val" id="statHang">--</div>
+        <div class="stat-cap">WAITING ON YOU</div>
+        <div class="bar"><span id="barHang"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="action">
+    <div class="action-head">
+      <h2>Action needed</h2>
+      <span class="action-sub" id="actionSub"></span>
+    </div>
+
+    <div class="filters" id="filters">
+      <button class="chip active" data-bucket="1d">1 day <em></em></button>
+      <button class="chip" data-bucket="7d">7 days <em></em></button>
+      <button class="chip" data-bucket="30d">30 days <em></em></button>
+      <button class="chip" data-bucket="90d">90 days <em></em></button>
+    </div>
+
+    <div class="thread-list" id="threads"></div>
+    <div class="empty" id="emptyState" hidden>🎉 Nobody’s waiting on you in this window. Inbox zero vibes.</div>
+  </div>
+
+  <footer class="foot">
+    <button class="btn tiny ghost" id="showDismissed"></button>
+    <span class="foot-note">All data stays in this browser. Nothing is uploaded.</span>
+  </footer>
+</section>
+
+<script>
+/*
+ * Miranda3 core logic — pure functions, no DOM.
+ *
+ * Shared by the browser app (app.js) and the Node smoke test (test/smoke.js).
+ * Everything here operates on the conversation objects produced by
+ * export.command and is deterministic given a `now` timestamp, so it can be
+ * unit-tested without a browser or a real chat.db.
+ */
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) {
+    module.exports = factory();
+  } else {
+    root.Miranda = factory();
+  }
+})(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
+
+  var HOUR = 3600000;
+  var DAY = 86400000;
+
+  // Time buckets the user asked for: unanswered texts in the last 1 / 7 / 30 / 90 days.
+  // `maxDays` is the upper bound (inclusive) on how long a thread has been waiting.
+  var BUCKETS = [
+    { key: '1d', label: '1 day', maxDays: 1 },
+    { key: '7d', label: '7 days', maxDays: 7 },
+    { key: '30d', label: '30 days', maxDays: 30 },
+    { key: '90d', label: '90 days', maxDays: 90 }
+  ];
+
+  function getCategory(c) {
+    // A manual override (set in the UI) always wins.
+    if (c.override) return c.override;
+    return c.category || 'uncategorized';
+  }
+
+  // Hours since the conversation's last message. Used everywhere for "how long
+  // have they been waiting on me".
+  function waitHours(c, now) {
+    if (!c.last_message_at) return 0;
+    return (now - new Date(c.last_message_at).getTime()) / HOUR;
+  }
+
+  function waitDays(c, now) {
+    return waitHours(c, now) / 24;
+  }
+
+  // 1:1, personal, not spam/delivery. This backs the responsiveness *score*,
+  // which is deliberately 1:1-only — group dynamics don't imply a personal
+  // reply obligation, so folding them in would distort the score.
+  function isPersonal(c) {
+    if (c.is_group) return false;
+    var cat = getCategory(c);
+    return cat !== 'spam' && cat !== 'delivery';
+  }
+
+  // Inbox eligibility for the "waiting on you" list. Same as isPersonal but
+  // ALSO includes group chats of any size (still excludes spam/delivery). The
+  // list shows these groups; the score (isPersonal) still ignores them, so
+  // group dynamics never distort your responsiveness number.
+  function inInbox(c) {
+    var cat = getCategory(c);
+    if (cat === 'spam' || cat === 'delivery') return false;
+    return true;
+  }
+
+  // "Waiting on you": inbox-eligible (1:1 or group), they sent the last
+  // substantive message, and you have not dismissed it.
+  function needsResponse(c, dismissed) {
+    if (!inInbox(c)) return false;
+    if (c.i_replied_last) return false;
+    if (dismissed && dismissed[c.id]) return false;
+    return true;
+  }
+
+  // Which time bucket a waiting conversation falls into. Buckets are cumulative
+  // windows (1d ⊂ 7d ⊂ 30d ⊂ 90d); `bucketKeyFor` returns the *tightest* one.
+  function bucketKeyFor(c, now) {
+    var d = waitDays(c, now);
+    for (var i = 0; i < BUCKETS.length; i++) {
+      if (d <= BUCKETS[i].maxDays) return BUCKETS[i].key;
+    }
+    return null; // older than 90 days — outside the tracked window
+  }
+
+  // Conversations waiting on you within a given bucket window (cumulative).
+  // bucketKey null/'all' => everything up to 90 days.
+  function waitingInBucket(conversations, bucketKey, now, dismissed) {
+    var maxDays = 90;
+    if (bucketKey && bucketKey !== 'all') {
+      var b = BUCKETS.filter(function (x) { return x.key === bucketKey; })[0];
+      if (b) maxDays = b.maxDays;
+    }
+    return conversations
+      .filter(function (c) { return needsResponse(c, dismissed); })
+      .filter(function (c) { return waitDays(c, now) <= maxDays; })
+      .sort(function (a, b) { return waitHours(b, now) - waitHours(a, now); });
+  }
+
+  // Count of waiting threads in each cumulative bucket.
+  function bucketCounts(conversations, now, dismissed) {
+    var out = {};
+    BUCKETS.forEach(function (b) {
+      out[b.key] = waitingInBucket(conversations, b.key, now, dismissed).length;
+    });
+    return out;
+  }
+
+  // ── Score ────────────────────────────────────────────────────────────────
+  // 0–100 responsiveness over the eligible personal set.
+  //   reply rate   45%  — share of threads where you got the last word
+  //   reply speed  25%  — penalize slow average response on open threads
+  //   hanging      30%  — penalize open threads, older ones weigh more
+  function computeScore(conversations, now, dismissed) {
+    var personal = conversations.filter(isPersonal);
+    if (!personal.length) {
+      return { score: 100, rate: 100, speed: 0, speedScore: 100, hanging: 0, hangingScore: 100, replied: 0, total: 0 };
+    }
+    var replied = personal.filter(function (c) { return c.i_replied_last || (dismissed && dismissed[c.id]); });
+    var unreplied = personal.filter(function (c) { return !c.i_replied_last && !(dismissed && dismissed[c.id]); });
+    var total = personal.length;
+    var rate = Math.round((replied.length / total) * 100);
+
+    var avgWait = 0;
+    if (unreplied.length) {
+      avgWait = unreplied.reduce(function (s, c) {
+        if (!c.last_message_at) return s;
+        return s + waitHours(c, now);
+      }, 0) / unreplied.length;
+    }
+    var speedScore = 100;
+    if (avgWait > 1) speedScore = Math.max(0, Math.round(100 - (avgWait / 72) * 100));
+
+    var hp = 0;
+    unreplied.forEach(function (c) {
+      if (!c.last_message_at) return;
+      var h = waitHours(c, now);
+      if (h < 1) hp += 1; else if (h < 24) hp += 3; else if (h < 72) hp += 6; else hp += 10;
+    });
+    var hangingScore = Math.max(0, 100 - hp);
+
+    var score = Math.round(rate * 0.45 + speedScore * 0.25 + hangingScore * 0.30);
+    return {
+      score: Math.max(0, Math.min(100, score)),
+      rate: rate,
+      speed: avgWait,
+      speedScore: speedScore,
+      hanging: unreplied.length,
+      hangingScore: hangingScore,
+      replied: replied.length,
+      total: total
+    };
+  }
+
+  function scoreLabel(score) {
+    if (score <= 15) return 'actively ghosting 👻';
+    if (score <= 35) return 'bad texter 😬';
+    if (score <= 55) return 'hit or miss 🎲';
+    if (score <= 75) return 'solid 👍';
+    if (score <= 90) return 'on it ⚡️';
+    return 'ELITE responder 🏆';
+  }
+
+  function scoreColorVar(s) {
+    if (s >= 85) return 'var(--green)';
+    if (s >= 65) return 'var(--yellow)';
+    if (s >= 40) return 'var(--orange)';
+    return 'var(--red)';
+  }
+
+  // ── Display helpers ────────────────────────────────────────────────────────
+  function displayName(c) {
+    if (c.is_group && c.group_name && c.group_name.trim()) return c.group_name.trim();
+    return c.contact_name || c.phone || 'Unknown';
+  }
+
+  function initial(c) {
+    var n = displayName(c).trim();
+    return n ? n[0].toUpperCase() : '?';
+  }
+
+  function relTime(d, now) {
+    if (!d) return '';
+    var ms = now - new Date(d).getTime();
+    var m = Math.floor(ms / 60000), h = Math.floor(ms / HOUR), dy = Math.floor(ms / DAY);
+    if (m < 1) return 'now';
+    if (m < 60) return m + 'm';
+    if (h < 24) return h + 'h';
+    if (dy < 7) return dy + 'd';
+    return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+
+  function fmtSpeed(h) {
+    if (h < 1) return '<1h';
+    if (h < 48) return Math.round(h) + 'h';
+    return Math.round(h / 24) + 'd';
+  }
+
+  // Builds the `sms:` URL macOS hands to Messages.app, opening that thread.
+  function buildSmsHref(phone) {
+    var clean = String(phone || '').replace(/\s/g, '');
+    if (!clean) return null;
+    // Only follow if it looks like a real number (avoid synthetic group labels).
+    if (!/^\+?\d+$/.test(clean)) return null;
+    return 'sms:' + clean;
+  }
+
+  return {
+    BUCKETS: BUCKETS,
+    HOUR: HOUR,
+    DAY: DAY,
+    getCategory: getCategory,
+    waitHours: waitHours,
+    waitDays: waitDays,
+    isPersonal: isPersonal,
+    inInbox: inInbox,
+    needsResponse: needsResponse,
+    bucketKeyFor: bucketKeyFor,
+    waitingInBucket: waitingInBucket,
+    bucketCounts: bucketCounts,
+    computeScore: computeScore,
+    scoreLabel: scoreLabel,
+    scoreColorVar: scoreColorVar,
+    displayName: displayName,
+    initial: initial,
+    relTime: relTime,
+    fmtSpeed: fmtSpeed,
+    buildSmsHref: buildSmsHref
+  };
+});
+
+/*
+ * Miranda3 sample data generator.
+ *
+ * Produces a realistic export-shaped payload with conversations spread across
+ * the 1 / 7 / 30 / 90-day buckets, plus replied threads and noise (spam,
+ * delivery, group) so the score and filters are meaningful. Dates are relative
+ * to "now" so the demo never goes stale.
+ */
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) {
+    module.exports = factory();
+  } else {
+    root.MirandaSample = factory();
+  }
+})(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
+
+  function generateSampleData(now) {
+    now = now || Date.now();
+    var iso = function (msAgo) { return new Date(now - msAgo).toISOString(); };
+    var H = 3600000, D = 86400000;
+
+    // [name, phone, hoursWaiting, lastText, repliedLast, extraMsgs]
+    var waiting = [
+      ['Gemma Colon', '+12125550111', 5 * H, 'Omg thank you! I miss you too are you back in nyc?!', false],
+      ['Liz Chen', '+12125550112', 20 * H, 'lmk if you’re free this week, would love to catch up', false],
+      ['Gayatri Rao', '+12125550113', 6 * D, 'Hi Sarah! How are you doing? Would love to chat in the coming days, was thinking of grabbing coffee', false],
+      ['Marcus Webb', '+12125550114', 4 * D, 'did you ever hear back about the thing? no rush', false],
+      ['Dad', '+12125550115', 12 * D, 'call your mother. and me. but mostly her.', false],
+      ['Priya Nair', '+12125550116', 22 * D, 'sending you that doc — let me know your thoughts whenever', false],
+      ['Jordan Diaz', '+12125550117', 40 * D, 'hey! random but are you still doing the pottery class?', false],
+      ['Sam Okafor', '+12125550118', 75 * D, 'happy belated! we should really catch up soon', false]
+    ];
+
+    // [name, phone, hoursAgo, lastTextFromMe]
+    var replied = [
+      ['Rachel Green', '+12125550201', 5 * H, 'Always.'],
+      ['Blair Waldorf', '+12125550202', 30 * H, 'I can do one.'],
+      ['Joey Tribbiani', '+12125550203', 3 * D, 'How many sandwiches are we talking?'],
+      ['Elaine Benes', '+12125550204', 9 * D, 'Also I support the anti-dancing stance.'],
+      ['Rory Gilmore', '+12125550205', 20 * D, 'Honestly proud of you.'],
+      ['Ron Swanson', '+12125550206', 55 * D, 'Sending now.']
+    ];
+
+    var conversations = [];
+
+    waiting.forEach(function (w, i) {
+      var name = w[0], phone = w[1], hoursWait = w[2], text = w[3];
+      conversations.push({
+        id: 'iMessage;-;' + phone,
+        contact_name: name,
+        phone: phone,
+        is_group: false,
+        group_name: null,
+        category: 'personal',
+        last_message_at: iso(hoursWait),
+        last_message_text: text,
+        i_replied_last: false,
+        latest_inbound_at: iso(hoursWait),
+        message_count_30d: 8 + i,
+        messages: [
+          { text: 'hey! it’s been a minute', from_me: false, date: iso(hoursWait + 2 * H) },
+          { text: text, from_me: false, date: iso(hoursWait) }
+        ]
+      });
+    });
+
+    replied.forEach(function (r, i) {
+      var name = r[0], phone = r[1], ago = r[2], text = r[3];
+      conversations.push({
+        id: 'iMessage;-;' + phone,
+        contact_name: name,
+        phone: phone,
+        is_group: false,
+        group_name: null,
+        category: 'personal',
+        last_message_at: iso(ago),
+        last_message_text: text,
+        i_replied_last: true,
+        latest_inbound_at: iso(ago + H),
+        message_count_30d: 4 + i,
+        messages: [
+          { text: 'thanks for the other day!', from_me: false, date: iso(ago + H) },
+          { text: text, from_me: true, date: iso(ago) }
+        ]
+      });
+    });
+
+    // Noise — spam/delivery are excluded from the inbox and the score. The
+    // group chat below shows in the inbox (waiting list) but not the score.
+    conversations.push({
+      id: 'iMessage;-;88202', contact_name: null, phone: '88202', is_group: false, group_name: null,
+      category: 'spam', last_message_at: iso(4 * H), latest_inbound_at: iso(4 * H), i_replied_last: false,
+      last_message_text: 'Your verification code is 884201. Do not share this code.', message_count_30d: 1,
+      messages: [{ text: 'Your verification code is 884201. Do not share this code.', from_me: false, date: iso(4 * H) }]
+    });
+    conversations.push({
+      id: 'iMessage;-;DoorDash', contact_name: 'DoorDash', phone: '305-DASH', is_group: false, group_name: null,
+      category: 'delivery', last_message_at: iso(2 * H), latest_inbound_at: iso(2 * H), i_replied_last: false,
+      last_message_text: 'Your DoorDash order is 4 minutes away.', message_count_30d: 1,
+      messages: [{ text: 'Your DoorDash order is 4 minutes away.', from_me: false, date: iso(2 * H) }]
+    });
+    conversations.push({
+      id: 'iMessage;chat;sundayroast', contact_name: null, phone: 'Group · 5 people', is_group: true,
+      participant_count: 5, group_name: 'Sunday Roast Crew', category: 'personal', last_message_at: iso(3 * H),
+      latest_inbound_at: iso(3 * H), i_replied_last: false, last_message_text: 'next round on me', message_count_30d: 12,
+      messages: [{ text: 'who’s in for brunch', from_me: false, date: iso(4 * H) }, { text: 'next round on me', from_me: false, date: iso(3 * H) }]
+    });
+    // Large group (14 people) — shows in the inbox like any group, but is
+    // still excluded from the responsiveness score.
+    conversations.push({
+      id: 'iMessage;chat;collegecrew', contact_name: null, phone: 'Group · 14 people', is_group: true,
+      participant_count: 14, group_name: 'College Crew 🎓', category: 'personal', last_message_at: iso(2 * H),
+      latest_inbound_at: iso(2 * H), i_replied_last: false, last_message_text: 'anyone going to the reunion??', message_count_30d: 200,
+      messages: [{ text: 'anyone going to the reunion??', from_me: false, date: iso(2 * H) }]
+    });
+
+    conversations.sort(function (a, b) {
+      return (b.last_message_at || '').localeCompare(a.last_message_at || '');
+    });
+
+    return {
+      app: 'Miranda3',
+      version: '3.0',
+      exported_at: new Date(now).toISOString(),
+      sample: true,
+      conversations: conversations
+    };
+  }
+
+  return { generateSampleData: generateSampleData };
+});
+
+/* Miranda3 app — DOM glue around core.js. Vanilla JS, no build step. */
+(function () {
+  'use strict';
+  var M = window.Miranda;
+
+  var LS_DATA = 'miranda3.data';
+  var LS_DISMISSED = 'miranda3.dismissed';
+  var LS_THEME = 'miranda3.theme';
+  var LS_HISTORY = 'miranda3.history';
+
+  var S = {
+    conversations: [],
+    exportedAt: null,
+    bucket: '1d',
+    dismissed: load(LS_DISMISSED) || {},
+    showingDismissed: false
+  };
+
+  function load(key) { try { return JSON.parse(localStorage.getItem(key)); } catch (e) { return null; } }
+  function save(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {} }
+  function $(id) { return document.getElementById(id); }
+
+  // ── File handle (File System Access API) ─────────────────────────────────────
+  // Lets us remember the export file so "Refresh" re-reads it with no picker,
+  // and auto-reload when the export script rewrites it. Chromium-only; every
+  // path degrades gracefully to the classic <input type=file> on other browsers.
+  var FH = null;            // connected FileSystemFileHandle
+  var fhMtime = null;       // lastModified of the data we currently show
+  var pollTimer = null;
+  var HDB = 'miranda3.fs', HSTORE = 'handles', HKEY = 'export';
+
+  function supportsFS() { return typeof window.showOpenFilePicker === 'function'; }
+
+  function hdb(cb) {
+    try {
+      var rq = indexedDB.open(HDB, 1);
+      rq.onupgradeneeded = function () { rq.result.createObjectStore(HSTORE); };
+      rq.onsuccess = function () { cb(rq.result); };
+      rq.onerror = function () { cb(null); };
+    } catch (e) { cb(null); }
+  }
+  function hSet(val) { hdb(function (db) { if (db) try { db.transaction(HSTORE, 'readwrite').objectStore(HSTORE).put(val, HKEY); } catch (e) {} }); }
+  function hGet(cb) { hdb(function (db) { if (!db) return cb(null); try { var r = db.transaction(HSTORE, 'readonly').objectStore(HSTORE).get(HKEY); r.onsuccess = function () { cb(r.result || null); }; r.onerror = function () { cb(null); }; } catch (e) { cb(null); } }); }
+
+  function fhPermission(handle, interactive) {
+    if (!handle || !handle.queryPermission) return Promise.resolve(true);
+    return handle.queryPermission({ mode: 'read' }).then(function (p) {
+      if (p === 'granted') return true;
+      if (!interactive || !handle.requestPermission) return false;
+      return handle.requestPermission({ mode: 'read' }).then(function (r) { return r === 'granted'; });
+    });
+  }
+
+  function fhRead(handle) {
+    return handle.getFile().then(function (file) {
+      return file.text().then(function (text) {
+        var data = JSON.parse(text);
+        if (!data || !Array.isArray(data.conversations)) throw new Error('no conversations array');
+        fhMtime = file.lastModified;
+        return data;
+      });
+    });
+  }
+
+  // Connect a file via the OS picker and remember it for future refreshes.
+  function pickViaFS() {
+    window.showOpenFilePicker({
+      multiple: false,
+      types: [{ description: 'Miranda export', accept: { 'application/json': ['.json'] } }]
+    }).then(function (handles) {
+      FH = handles[0];
+      hSet(FH);
+      return fhRead(FH).then(function (data) { adopt(data); startPolling(); });
+    }).catch(function (err) {
+      if (err && err.name === 'AbortError') return;   // user cancelled the picker
+      alert('Could not open that file.\n\n' + (err && err.message));
+    });
+  }
+
+  // The Refresh button: re-read the remembered file. Falls back to the picker.
+  function refresh(interactive) {
+    if (!FH) { if (supportsFS()) pickViaFS(); else $('fileInput').click(); return; }
+    fhPermission(FH, interactive).then(function (okp) {
+      if (!okp) { if (interactive) pickViaFS(); return; }   // permission lapsed → reconnect
+      fhRead(FH).then(function (data) { adopt(data); startPolling(); })
+        .catch(function (e) { if (interactive) alert('Could not refresh.\n\n' + (e && e.message)); });
+    });
+  }
+
+  // Watch the connected file; when the export rewrites it, reload automatically.
+  function startPolling() {
+    if (pollTimer || !FH) return;
+    pollTimer = setInterval(function () {
+      if (document.hidden || !FH) return;
+      fhPermission(FH, false).then(function (okp) {
+        if (!okp) return;
+        FH.getFile().then(function (file) {
+          if (fhMtime != null && file.lastModified > fhMtime) {
+            file.text().then(function (text) {
+              try {
+                var data = JSON.parse(text);
+                if (data && Array.isArray(data.conversations)) { fhMtime = file.lastModified; adopt(data); }
+              } catch (e) {}
+            });
+          }
+        }).catch(function () {});
+      });
+    }, 4000);
+  }
+
+  // ── Boot ───────────────────────────────────────────────────────────────────
+  function init() {
+    if (load(LS_THEME) === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+
+    wireStart();
+    wireDash();
+
+    if (!supportsFS()) { $('refreshBtn').hidden = true; }
+
+    var saved = load(LS_DATA);
+    if (saved && saved.conversations) {
+      adopt(saved);
+    }
+
+    // Reconnect a previously-remembered file. Browsers usually require a click
+    // to re-grant access after a reload, so if permission isn't already live we
+    // keep the handle ready and let the Refresh button prompt for it.
+    if (supportsFS()) {
+      hGet(function (h) {
+        if (!h) return;
+        FH = h;
+        fhPermission(h, false).then(function (okp) {
+          if (okp) refresh(false);
+        });
+      });
+    }
+  }
+
+  function wireStart() {
+    var dz = $('dropzone');
+    // Prefer the File System Access picker (gives us a re-readable handle);
+    // fall back to the classic file input where it isn't supported.
+    $('pickFile').onclick = function () { if (supportsFS()) pickViaFS(); else $('fileInput').click(); };
+    $('fileInput').onchange = function (e) {
+      var f = e.target.files[0];
+      if (f) readFile(f);
+    };
+    $('loadSample').onclick = function () {
+      adopt(window.MirandaSample.generateSampleData(Date.now()));
+    };
+    ['dragenter', 'dragover'].forEach(function (ev) {
+      dz.addEventListener(ev, function (e) { e.preventDefault(); dz.classList.add('dragover'); });
+    });
+    ['dragleave', 'drop'].forEach(function (ev) {
+      dz.addEventListener(ev, function (e) { e.preventDefault(); dz.classList.remove('dragover'); });
+    });
+    dz.addEventListener('drop', function (e) {
+      var it = e.dataTransfer.items && e.dataTransfer.items[0];
+      if (it && it.getAsFileSystemHandle) {
+        // Chromium: capture a persistent handle from the drop so Refresh works.
+        it.getAsFileSystemHandle().then(function (h) {
+          if (h && h.kind === 'file') { FH = h; hSet(FH); fhRead(FH).then(function (d) { adopt(d); startPolling(); }); }
+          else { var f = e.dataTransfer.files[0]; if (f) readFile(f); }
+        }).catch(function () { var f = e.dataTransfer.files[0]; if (f) readFile(f); });
+        return;
+      }
+      var f = e.dataTransfer.files[0];
+      if (f) readFile(f);
+    });
+  }
+
+  function readFile(file) {
+    var r = new FileReader();
+    r.onload = function () {
+      try {
+        var data = JSON.parse(r.result);
+        if (!data || !Array.isArray(data.conversations)) throw new Error('no conversations array');
+        adopt(data);
+      } catch (err) {
+        alert('Could not read that file — expected a miranda5_messages.json export.\n\n' + err.message);
+      }
+    };
+    r.readAsText(file);
+  }
+
+  function adopt(data) {
+    S.conversations = data.conversations || [];
+    S.exportedAt = data.exported_at || null;
+    S.isSample = !!data.sample;
+    save(LS_DATA, data);
+    $('start').hidden = true;
+    $('dash').hidden = false;
+    recordHistory();
+    render();
+  }
+
+  // ── Dashboard wiring ────────────────────────────────────────────────────────
+  function wireDash() {
+    $('darkToggle').onclick = function () {
+      var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      if (dark) { document.documentElement.removeAttribute('data-theme'); save(LS_THEME, 'light'); }
+      else { document.documentElement.setAttribute('data-theme', 'dark'); save(LS_THEME, 'dark'); }
+    };
+    $('refreshBtn').onclick = function () { refresh(true); };
+    $('reload').onclick = function () {
+      $('dash').hidden = true;
+      $('start').hidden = false;
+    };
+    $('filters').addEventListener('click', function (e) {
+      var btn = e.target.closest('.chip');
+      if (!btn) return;
+      S.bucket = btn.getAttribute('data-bucket');
+      S.showingDismissed = false;
+      [].forEach.call(document.querySelectorAll('.chip'), function (c) { c.classList.remove('active'); });
+      btn.classList.add('active');
+      renderThreads();
+    });
+    $('showDismissed').onclick = function () {
+      S.showingDismissed = !S.showingDismissed;
+      renderThreads();
+    };
+  }
+
+  // ── Render ──────────────────────────────────────────────────────────────────
+  function render() {
+    renderScore();
+    renderFilters();
+    renderThreads();
+    var live = (FH && !S.isSample) ? ' · ↻ live' : '';
+    if (S.exportedAt) {
+      $('updated').textContent = 'Updated ' + M.relTime(S.exportedAt, Date.now()) +
+        (S.isSample ? ' · sample data' : ' ago') + live;
+    } else {
+      $('updated').textContent = (S.isSample ? 'sample data' : '') + live;
+    }
+  }
+
+  function renderScore() {
+    var now = Date.now();
+    var s = M.computeScore(S.conversations, now, S.dismissed);
+
+    $('scoreNum').textContent = s.score;
+    $('scoreNum').style.color = M.scoreColorVar(s.score);
+    $('scoreLabel').textContent = M.scoreLabel(s.score);
+
+    var circ = 540;
+    $('ringFill').style.strokeDashoffset = circ - (circ * s.score / 100);
+
+    $('statRate').textContent = s.rate + '%';
+    $('barRate').style.width = s.rate + '%';
+
+    $('statWait').textContent = s.hanging ? M.fmtSpeed(s.speed) : '0h';
+    $('barWait').style.width = Math.min(100, (s.speed / 72) * 100) + '%';
+
+    $('statHang').textContent = s.hanging;
+    $('barHang').style.width = Math.min(100, s.hanging * 9) + '%';
+  }
+
+  function renderFilters() {
+    var counts = M.bucketCounts(S.conversations, Date.now(), S.dismissed);
+    [].forEach.call(document.querySelectorAll('.chip'), function (chip) {
+      var k = chip.getAttribute('data-bucket');
+      chip.querySelector('em').textContent = counts[k] != null ? '(' + counts[k] + ')' : '';
+    });
+    var total = counts['90d'] || 0;
+    $('actionSub').textContent = total + (total === 1 ? ' person' : ' people') + ' waiting on you';
+  }
+
+  function renderThreads() {
+    var now = Date.now();
+    var box = $('threads');
+    box.innerHTML = '';
+
+    var list;
+    if (S.showingDismissed) {
+      list = S.conversations.filter(function (c) { return S.dismissed[c.id]; });
+    } else {
+      list = M.waitingInBucket(S.conversations, S.bucket, now, S.dismissed);
+    }
+
+    var dismissedCount = Object.keys(S.dismissed).filter(function (id) {
+      return S.conversations.some(function (c) { return c.id === id; });
+    }).length;
+    $('showDismissed').textContent = S.showingDismissed
+      ? '← back to action list'
+      : (dismissedCount ? 'view dismissed (' + dismissedCount + ')' : '');
+    $('showDismissed').style.visibility = (dismissedCount || S.showingDismissed) ? 'visible' : 'hidden';
+
+    if (!list.length) {
+      $('emptyState').hidden = false;
+      $('emptyState').textContent = S.showingDismissed
+        ? 'Nothing dismissed.'
+        : '🎉 Nobody’s waiting on you in this window. Inbox zero vibes.';
+      return;
+    }
+    $('emptyState').hidden = true;
+
+    list.forEach(function (c) { box.appendChild(threadEl(c, now)); });
+  }
+
+  function threadEl(c, now) {
+    var el = document.createElement('div');
+    el.className = 'thread';
+
+    var hrs = M.waitHours(c, now);
+    var color = hrs < 24 ? 'var(--yellow)' : hrs < 72 ? 'var(--orange)' : 'var(--red)';
+    var preview = escapeHtml(c.last_message_text || '');
+    var sender = c.is_group ? '' : 'Them: ';
+
+    var groupTag = c.is_group
+      ? ' <span class="group-tag">group' + (c.participant_count ? ' · ' + c.participant_count : '') + '</span>'
+      : '';
+
+    el.innerHTML =
+      '<div class="avatar">' + escapeHtml(M.initial(c)) + '</div>' +
+      '<div class="thread-main">' +
+        '<div class="thread-top">' +
+          '<span class="thread-name">' + escapeHtml(M.displayName(c)) + groupTag + '</span>' +
+          '<span class="thread-when">' + escapeHtml(M.relTime(c.last_message_at, now)) +
+            '<span class="dot" style="background:' + color + '"></span></span>' +
+        '</div>' +
+        '<div class="thread-preview"><b>' + sender + '</b>' + preview + '</div>' +
+      '</div>';
+
+    var actions = document.createElement('div');
+    actions.className = 'thread-actions';
+
+    if (!S.showingDismissed) {
+      var dismiss = document.createElement('button');
+      dismiss.className = 'dismiss-btn';
+      dismiss.title = 'Dismiss — I don’t owe a reply';
+      dismiss.textContent = '✕';
+      dismiss.onclick = function () {
+        S.dismissed[c.id] = { at: Date.now(), inbound: c.latest_inbound_at || c.last_message_at };
+        save(LS_DISMISSED, S.dismissed);
+        render();
+      };
+      actions.appendChild(dismiss);
+    } else {
+      var restore = document.createElement('button');
+      restore.className = 'dismiss-btn';
+      restore.textContent = 'restore';
+      restore.onclick = function () {
+        delete S.dismissed[c.id];
+        save(LS_DISMISSED, S.dismissed);
+        render();
+      };
+      actions.appendChild(restore);
+    }
+
+    // Groups have no single sms: target (the export's phone is just one member),
+    // so don't deep-link them — send the user to Messages to pick the thread.
+    var href = c.is_group ? null : M.buildSmsHref(c.phone);
+    var go = document.createElement('a');
+    go.className = 'go-btn';
+    go.textContent = 'Go to iMessage →';
+    if (href) { go.href = href; }
+    else {
+      go.href = '#';
+      go.title = 'Open Messages and pick this thread';
+      go.onclick = function (e) {
+        e.preventDefault();
+        alert(c.is_group
+          ? 'Group chat — open Messages and pick “' + M.displayName(c) + '”.'
+          : 'No phone/handle on this thread (group or short code).');
+      };
+    }
+    actions.appendChild(go);
+
+    el.appendChild(actions);
+    return el;
+  }
+
+  // One score snapshot per day (last 90 kept) — backs a future trend view.
+  function recordHistory() {
+    var hist = load(LS_HISTORY) || [];
+    var s = M.computeScore(S.conversations, Date.now(), S.dismissed);
+    var day = new Date().toISOString().slice(0, 10);
+    var idx = hist.findIndex(function (h) { return h.date === day; });
+    var entry = { date: day, score: s.score, rate: s.rate, hanging: s.hanging };
+    if (idx >= 0) hist[idx] = entry; else hist.push(entry);
+    if (hist.length > 90) hist = hist.slice(-90);
+    save(LS_HISTORY, hist);
+  }
+
+  function escapeHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+})();
+
+</script>
+</body>
+</html>
