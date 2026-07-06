@@ -35,6 +35,9 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 .screen { max-width: 980px; margin: 0 auto; padding: 24px; }
+/* The hidden attribute must always win, even over ID rules like #start below,
+   otherwise the start screen stays visible stacked above the dashboard. */
+[hidden] { display: none !important; }
 
 /* ── Logo ── */
 .logo { font-size: 44px; font-weight: 800; letter-spacing: -1.5px; }
