@@ -642,7 +642,14 @@ body {
   var pollTimer = null;
   var HDB = 'miranda3.fs', HSTORE = 'handles', HKEY = 'export';
 
-  function supportsFS() { return typeof window.showOpenFilePicker === 'function'; }
+  // The File System Access API only works reliably at the top level in a secure
+  // context. In a sandboxed iframe (e.g. a hosted Claude artifact) showOpenFilePicker
+  // may exist but throws when called, so treat "inside an iframe" as unsupported
+  // and let the classic <input type=file> handle uploads there.
+  function supportsFS() {
+    try { if (window.self !== window.top) return false; } catch (e) { return false; }
+    return typeof window.showOpenFilePicker === 'function';
+  }
 
   function hdb(cb) {
     try {
@@ -686,7 +693,8 @@ body {
       return fhRead(FH).then(function (data) { adopt(data); startPolling(); });
     }).catch(function (err) {
       if (err && err.name === 'AbortError') return;   // user cancelled the picker
-      alert('Could not open that file.\n\n' + (err && err.message));
+      // Picker blocked (sandbox / insecure context) — fall back to classic input.
+      $('fileInput').click();
     });
   }
 
