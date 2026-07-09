@@ -86,7 +86,8 @@
       });
     });
 
-    // Noise — excluded from the inbox and the score.
+    // Noise — spam/delivery are excluded from the inbox and the score. The
+    // group chat below shows in the inbox (waiting list) but not the score.
     conversations.push({
       id: 'iMessage;-;88202', contact_name: null, phone: '88202', is_group: false, group_name: null,
       category: 'spam', last_message_at: iso(4 * H), latest_inbound_at: iso(4 * H), i_replied_last: false,
@@ -101,9 +102,17 @@
     });
     conversations.push({
       id: 'iMessage;chat;sundayroast', contact_name: null, phone: 'Group · 5 people', is_group: true,
-      group_name: 'Sunday Roast Crew', category: 'personal', last_message_at: iso(3 * H),
+      participant_count: 5, group_name: 'Sunday Roast Crew', category: 'personal', last_message_at: iso(3 * H),
       latest_inbound_at: iso(3 * H), i_replied_last: false, last_message_text: 'next round on me', message_count_30d: 12,
       messages: [{ text: 'who’s in for brunch', from_me: false, date: iso(4 * H) }, { text: 'next round on me', from_me: false, date: iso(3 * H) }]
+    });
+    // Large group (14 people) — shows in the inbox like any group, but is
+    // still excluded from the responsiveness score.
+    conversations.push({
+      id: 'iMessage;chat;collegecrew', contact_name: null, phone: 'Group · 14 people', is_group: true,
+      participant_count: 14, group_name: 'College Crew 🎓', category: 'personal', last_message_at: iso(2 * H),
+      latest_inbound_at: iso(2 * H), i_replied_last: false, last_message_text: 'anyone going to the reunion??', message_count_30d: 200,
+      messages: [{ text: 'anyone going to the reunion??', from_me: false, date: iso(2 * H) }]
     });
 
     conversations.sort(function (a, b) {

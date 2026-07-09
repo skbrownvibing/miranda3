@@ -20,6 +20,102 @@
   function save(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {} }
   function $(id) { return document.getElementById(id); }
 
+  // ── File handle (File System Access API) ─────────────────────────────────────
+  // Lets us remember the export file so "Refresh" re-reads it with no picker,
+  // and auto-reload when the export script rewrites it. Chromium-only; every
+  // path degrades gracefully to the classic <input type=file> on other browsers.
+  var FH = null;            // connected FileSystemFileHandle
+  var fhMtime = null;       // lastModified of the data we currently show
+  var pollTimer = null;
+  var HDB = 'miranda3.fs', HSTORE = 'handles', HKEY = 'export';
+
+  // The File System Access API only works reliably at the top level in a secure
+  // context. In a sandboxed iframe (e.g. a hosted Claude artifact) showOpenFilePicker
+  // may exist but throws when called, so treat "inside an iframe" as unsupported
+  // and let the classic <input type=file> handle uploads there.
+  function supportsFS() {
+    try { if (window.self !== window.top) return false; } catch (e) { return false; }
+    return typeof window.showOpenFilePicker === 'function';
+  }
+
+  function hdb(cb) {
+    try {
+      var rq = indexedDB.open(HDB, 1);
+      rq.onupgradeneeded = function () { rq.result.createObjectStore(HSTORE); };
+      rq.onsuccess = function () { cb(rq.result); };
+      rq.onerror = function () { cb(null); };
+    } catch (e) { cb(null); }
+  }
+  function hSet(val) { hdb(function (db) { if (db) try { db.transaction(HSTORE, 'readwrite').objectStore(HSTORE).put(val, HKEY); } catch (e) {} }); }
+  function hGet(cb) { hdb(function (db) { if (!db) return cb(null); try { var r = db.transaction(HSTORE, 'readonly').objectStore(HSTORE).get(HKEY); r.onsuccess = function () { cb(r.result || null); }; r.onerror = function () { cb(null); }; } catch (e) { cb(null); } }); }
+
+  function fhPermission(handle, interactive) {
+    if (!handle || !handle.queryPermission) return Promise.resolve(true);
+    return handle.queryPermission({ mode: 'read' }).then(function (p) {
+      if (p === 'granted') return true;
+      if (!interactive || !handle.requestPermission) return false;
+      return handle.requestPermission({ mode: 'read' }).then(function (r) { return r === 'granted'; });
+    });
+  }
+
+  function fhRead(handle) {
+    return handle.getFile().then(function (file) {
+      return file.text().then(function (text) {
+        var data = JSON.parse(text);
+        if (!data || !Array.isArray(data.conversations)) throw new Error('no conversations array');
+        fhMtime = file.lastModified;
+        return data;
+      });
+    });
+  }
+
+  // Connect a file via the OS picker and remember it for future refreshes.
+  function pickViaFS() {
+    window.showOpenFilePicker({
+      multiple: false,
+      types: [{ description: 'Miranda export', accept: { 'application/json': ['.json'] } }]
+    }).then(function (handles) {
+      FH = handles[0];
+      hSet(FH);
+      return fhRead(FH).then(function (data) { adopt(data); startPolling(); });
+    }).catch(function (err) {
+      if (err && err.name === 'AbortError') return;   // user cancelled the picker
+      // Picker blocked (sandbox / insecure context) — fall back to classic input.
+      $('fileInput').click();
+    });
+  }
+
+  // The Refresh button: re-read the remembered file. Falls back to the picker.
+  function refresh(interactive) {
+    if (!FH) { if (supportsFS()) pickViaFS(); else $('fileInput').click(); return; }
+    fhPermission(FH, interactive).then(function (okp) {
+      if (!okp) { if (interactive) pickViaFS(); return; }   // permission lapsed → reconnect
+      fhRead(FH).then(function (data) { adopt(data); startPolling(); })
+        .catch(function (e) { if (interactive) alert('Could not refresh.\n\n' + (e && e.message)); });
+    });
+  }
+
+  // Watch the connected file; when the export rewrites it, reload automatically.
+  function startPolling() {
+    if (pollTimer || !FH) return;
+    pollTimer = setInterval(function () {
+      if (document.hidden || !FH) return;
+      fhPermission(FH, false).then(function (okp) {
+        if (!okp) return;
+        FH.getFile().then(function (file) {
+          if (fhMtime != null && file.lastModified > fhMtime) {
+            file.text().then(function (text) {
+              try {
+                var data = JSON.parse(text);
+                if (data && Array.isArray(data.conversations)) { fhMtime = file.lastModified; adopt(data); }
+              } catch (e) {}
+            });
+          }
+        }).catch(function () {});
+      });
+    }, 4000);
+  }
+
   // ── Boot ───────────────────────────────────────────────────────────────────
   function init() {
     if (load(LS_THEME) === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
@@ -27,15 +123,32 @@
     wireStart();
     wireDash();
 
+    if (!supportsFS()) { $('refreshBtn').hidden = true; }
+
     var saved = load(LS_DATA);
     if (saved && saved.conversations) {
       adopt(saved);
+    }
+
+    // Reconnect a previously-remembered file. Browsers usually require a click
+    // to re-grant access after a reload, so if permission isn't already live we
+    // keep the handle ready and let the Refresh button prompt for it.
+    if (supportsFS()) {
+      hGet(function (h) {
+        if (!h) return;
+        FH = h;
+        fhPermission(h, false).then(function (okp) {
+          if (okp) refresh(false);
+        });
+      });
     }
   }
 
   function wireStart() {
     var dz = $('dropzone');
-    $('pickFile').onclick = function () { $('fileInput').click(); };
+    // Prefer the File System Access picker (gives us a re-readable handle);
+    // fall back to the classic file input where it isn't supported.
+    $('pickFile').onclick = function () { if (supportsFS()) pickViaFS(); else $('fileInput').click(); };
     $('fileInput').onchange = function (e) {
       var f = e.target.files[0];
       if (f) readFile(f);
@@ -50,6 +163,15 @@
       dz.addEventListener(ev, function (e) { e.preventDefault(); dz.classList.remove('dragover'); });
     });
     dz.addEventListener('drop', function (e) {
+      var it = e.dataTransfer.items && e.dataTransfer.items[0];
+      if (it && it.getAsFileSystemHandle) {
+        // Chromium: capture a persistent handle from the drop so Refresh works.
+        it.getAsFileSystemHandle().then(function (h) {
+          if (h && h.kind === 'file') { FH = h; hSet(FH); fhRead(FH).then(function (d) { adopt(d); startPolling(); }); }
+          else { var f = e.dataTransfer.files[0]; if (f) readFile(f); }
+        }).catch(function () { var f = e.dataTransfer.files[0]; if (f) readFile(f); });
+        return;
+      }
       var f = e.dataTransfer.files[0];
       if (f) readFile(f);
     });
@@ -63,7 +185,7 @@
         if (!data || !Array.isArray(data.conversations)) throw new Error('no conversations array');
         adopt(data);
       } catch (err) {
-        alert('Could not read that file — expected a miranda3_messages.json export.\n\n' + err.message);
+        alert('Could not read that file — expected a miranda5_messages.json export.\n\n' + err.message);
       }
     };
     r.readAsText(file);
@@ -87,6 +209,7 @@
       if (dark) { document.documentElement.removeAttribute('data-theme'); save(LS_THEME, 'light'); }
       else { document.documentElement.setAttribute('data-theme', 'dark'); save(LS_THEME, 'dark'); }
     };
+    $('refreshBtn').onclick = function () { refresh(true); };
     $('reload').onclick = function () {
       $('dash').hidden = true;
       $('start').hidden = false;
@@ -111,11 +234,12 @@
     renderScore();
     renderFilters();
     renderThreads();
+    var live = (FH && !S.isSample) ? ' · ↻ live' : '';
     if (S.exportedAt) {
       $('updated').textContent = 'Updated ' + M.relTime(S.exportedAt, Date.now()) +
-        (S.isSample ? ' · sample data' : ' ago');
+        (S.isSample ? ' · sample data' : ' ago') + live;
     } else {
-      $('updated').textContent = S.isSample ? 'sample data' : '';
+      $('updated').textContent = (S.isSample ? 'sample data' : '') + live;
     }
   }
 
@@ -191,11 +315,15 @@
     var preview = escapeHtml(c.last_message_text || '');
     var sender = c.is_group ? '' : 'Them: ';
 
+    var groupTag = c.is_group
+      ? ' <span class="group-tag">group' + (c.participant_count ? ' · ' + c.participant_count : '') + '</span>'
+      : '';
+
     el.innerHTML =
       '<div class="avatar">' + escapeHtml(M.initial(c)) + '</div>' +
       '<div class="thread-main">' +
         '<div class="thread-top">' +
-          '<span class="thread-name">' + escapeHtml(M.displayName(c)) + '</span>' +
+          '<span class="thread-name">' + escapeHtml(M.displayName(c)) + groupTag + '</span>' +
           '<span class="thread-when">' + escapeHtml(M.relTime(c.last_message_at, now)) +
             '<span class="dot" style="background:' + color + '"></span></span>' +
         '</div>' +
@@ -228,15 +356,22 @@
       actions.appendChild(restore);
     }
 
-    var href = M.buildSmsHref(c.phone);
+    // Groups have no single sms: target (the export's phone is just one member),
+    // so don't deep-link them — send the user to Messages to pick the thread.
+    var href = c.is_group ? null : M.buildSmsHref(c.phone);
     var go = document.createElement('a');
     go.className = 'go-btn';
     go.textContent = 'Go to iMessage →';
     if (href) { go.href = href; }
     else {
       go.href = '#';
-      go.title = 'No phone number — open Messages manually';
-      go.onclick = function (e) { e.preventDefault(); alert('No phone/handle on this thread (group or short code).'); };
+      go.title = 'Open Messages and pick this thread';
+      go.onclick = function (e) {
+        e.preventDefault();
+        alert(c.is_group
+          ? 'Group chat — open Messages and pick “' + M.displayName(c) + '”.'
+          : 'No phone/handle on this thread (group or short code).');
+      };
     }
     actions.appendChild(go);
 

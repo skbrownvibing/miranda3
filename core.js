@@ -44,18 +44,29 @@
     return waitHours(c, now) / 24;
   }
 
-  // The eligible set: 1:1, personal, not spam/delivery. This is the same set
-  // used for the action list AND the score (PRD: one eligibility set).
+  // 1:1, personal, not spam/delivery. This backs the responsiveness *score*,
+  // which is deliberately 1:1-only — group dynamics don't imply a personal
+  // reply obligation, so folding them in would distort the score.
   function isPersonal(c) {
     if (c.is_group) return false;
     var cat = getCategory(c);
     return cat !== 'spam' && cat !== 'delivery';
   }
 
-  // "Waiting on you": personal, they sent the last substantive message, and you
-  // have not dismissed it.
+  // Inbox eligibility for the "waiting on you" list. Same as isPersonal but
+  // ALSO includes group chats of any size (still excludes spam/delivery). The
+  // list shows these groups; the score (isPersonal) still ignores them, so
+  // group dynamics never distort your responsiveness number.
+  function inInbox(c) {
+    var cat = getCategory(c);
+    if (cat === 'spam' || cat === 'delivery') return false;
+    return true;
+  }
+
+  // "Waiting on you": inbox-eligible (1:1 or group), they sent the last
+  // substantive message, and you have not dismissed it.
   function needsResponse(c, dismissed) {
-    if (!isPersonal(c)) return false;
+    if (!inInbox(c)) return false;
     if (c.i_replied_last) return false;
     if (dismissed && dismissed[c.id]) return false;
     return true;
@@ -201,6 +212,7 @@
     waitHours: waitHours,
     waitDays: waitDays,
     isPersonal: isPersonal,
+    inInbox: inInbox,
     needsResponse: needsResponse,
     bucketKeyFor: bucketKeyFor,
     waitingInBucket: waitingInBucket,

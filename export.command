@@ -1,24 +1,24 @@
 #!/bin/bash
-# Miranda3 – iMessage Inbox Exporter
+# Miranda5 – iMessage Inbox Exporter
 # Double-click to run. Requires Full Disk Access for Terminal.
 #
 # Reads ~/Library/Messages/chat.db (+ AddressBook for names), normalizes the
 # conversations, and writes a JSON file to your Desktop. Open index.html and
 # drop that JSON onto the page.
 
-SCRIPT_VERSION="3.0.0"
+SCRIPT_VERSION="5.0.0"
 
 show_help() {
   cat <<'HELP'
-Miranda3 message export
+Miranda5 message export
 
 Usage:
   ./export.command [--help] [--version]
 
 Environment overrides:
-  MIRANDA3_OUTPUT_PATH    Output JSON path (default: ~/Desktop/miranda3_messages.json)
-  MIRANDA3_CHAT_DB_PATH   Chat DB path for export (default: ~/Library/Messages/chat.db)
-  MIRANDA3_LOOKBACK_DAYS  How far back to pull messages (default: 90)
+  MIRANDA5_OUTPUT_PATH    Output JSON path (default: ~/Desktop/miranda5_messages.json)
+  MIRANDA5_CHAT_DB_PATH   Chat DB path for export (default: ~/Library/Messages/chat.db)
+  MIRANDA5_LOOKBACK_DAYS  How far back to pull messages (default: 90)
 
 Exit codes:
   0  Export completed successfully
@@ -29,13 +29,13 @@ HELP
 for arg in "$@"; do
   case "$arg" in
     --help|-h) show_help; exit 0 ;;
-    --version|-v) echo "Miranda3 export.command ${SCRIPT_VERSION}"; exit 0 ;;
+    --version|-v) echo "Miranda5 export.command ${SCRIPT_VERSION}"; exit 0 ;;
     *) echo "Unknown option: $arg"; echo "Run ./export.command --help for usage."; exit 1 ;;
   esac
 done
 
 echo ""
-echo "  Miranda3 – iMessage Inbox Export"
+echo "  Miranda5 – iMessage Inbox Export"
 echo "  ================================"
 echo ""
 
@@ -47,15 +47,20 @@ if ! command -v python3 &>/dev/null; then
   exit 1
 fi
 
+# Resolve the output path in bash so we can reveal it in Finder afterward.
+# Python reads the same env var, so both sides agree on the location.
+OUTPUT_PATH="${MIRANDA5_OUTPUT_PATH:-$HOME/Desktop/miranda5_messages.json}"
+export MIRANDA5_OUTPUT_PATH="$OUTPUT_PATH"
+
 python3 <<'PYTHON_EOF'
 import sqlite3, json, os, re, glob, sys, plistlib
 from datetime import datetime, timezone, timedelta
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
-LOOKBACK_DAYS   = int(os.environ.get('MIRANDA3_LOOKBACK_DAYS', '90'))
+LOOKBACK_DAYS   = int(os.environ.get('MIRANDA5_LOOKBACK_DAYS', '90'))
 PERSONAL_THRESH = 3     # Min messages in window to classify as personal (no contact)
-OUTPUT_PATH     = os.path.expanduser(os.environ.get('MIRANDA3_OUTPUT_PATH', '~/Desktop/miranda3_messages.json'))
+OUTPUT_PATH     = os.path.expanduser(os.environ.get('MIRANDA5_OUTPUT_PATH', '~/Desktop/miranda5_messages.json'))
 APPLE_EPOCH     = datetime(2001, 1, 1, tzinfo=timezone.utc)
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -349,7 +354,7 @@ def is_substantive(row):
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
-    db_path = os.path.expanduser(os.environ.get('MIRANDA3_CHAT_DB_PATH', '~/Library/Messages/chat.db'))
+    db_path = os.path.expanduser(os.environ.get('MIRANDA5_CHAT_DB_PATH', '~/Library/Messages/chat.db'))
     if not os.path.exists(db_path):
         print("  ERROR: iMessage database not found.")
         print(f"  Expected: {db_path}")
@@ -445,6 +450,7 @@ def main():
             'phone':             primary,
             'is_group':          is_group,
             'group_name':        display_name if is_group else None,
+            'participant_count': len(handles) + 1,  # other members + you
             'category':          categorize(primary, contact_name, in_contacts, msg_list, msg_count),
             'last_message_at':   last_at,
             'last_message_text': last_preview,
@@ -466,8 +472,8 @@ def main():
             unreplied_personal += 1
 
     output = {
-        'app':           'Miranda3',
-        'version':       '3.0',
+        'app':           'Miranda5',
+        'version':       '5.0',
         'exported_at':   now.isoformat(),
         'conversations': conversations,
     }
@@ -490,7 +496,7 @@ def main():
         print(f"\n  Tapback corrections: {tapback_corrections} conversation(s) had their")
         print(f"  reply status corrected by ignoring reactions/tapbacks.")
     print(f"\n  File: {OUTPUT_PATH}")
-    print(f"\n  Open index.html and drag the JSON file onto the page.")
+    print(f"\n  Load miranda5_messages.json on the page (a Finder window will open).")
     return True
 
 ok = main()
@@ -500,7 +506,12 @@ PYTHON_EOF
 STATUS=$?
 echo ""
 if [ $STATUS -eq 0 ]; then
-  echo "  Export complete. You can close this window."
+  # Reveal the freshly written file in Finder so it's easy to find and upload.
+  if command -v open &>/dev/null && [ -f "$OUTPUT_PATH" ]; then
+    open -R "$OUTPUT_PATH" 2>/dev/null || true
+  fi
+  echo "  Export complete — miranda5_messages.json is now selected in Finder."
+  echo "  You can close this window."
 else
   echo "  Export failed. See errors above."
 fi
